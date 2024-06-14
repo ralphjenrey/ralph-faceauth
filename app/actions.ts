@@ -3,8 +3,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+export type FormState = {
+  username: string;
+  password: string;
+  faceID: string;
+};
+
 //Create a new account
-export async function createAccount(formData: FormData) {
+export async function createAccount(prevState: FormState, formData: FormData) {
   try {
     const username = formData.get("username");
     const password = formData.get("password");
@@ -27,14 +33,14 @@ export async function createAccount(formData: FormData) {
     });
 
     if (!user) {
-      throw new Error("Failed to create user");
+      return { message: "Failed to create account" };
     }
 
-    // Return user or some success message
-    return user;
+    return { message: "Account created successfully" };
   } catch (error) {
     // Handle or log the error appropriately
     console.error("Error creating account:", error);
-    throw error; // Rethrow or handle as needed
+
+    return { message: "Error creating account" };
   }
 }

@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Modal, ModalBody, ModalContent } from "@nextui-org/modal";
 import { Spinner } from "@nextui-org/spinner";
 import {
   FaceMatcher,
   LabeledFaceDescriptors,
   detectSingleFace,
-  draw,
   loadFaceExpressionModel,
   loadFaceLandmarkModel,
   loadFaceRecognitionModel,
   loadSsdMobilenetv1Model,
-  resizeResults,
 } from "face-api.js";
-import { Button } from "@nextui-org/button";
 import { useRouter } from "next/navigation";
 
 import { title } from "./primitives";
+import FormButton from "./form-button";
 
 import { createAccount } from "@/app/actions";
+import { useFormState } from "react-dom";
 
 interface FaceID {
   label: string;
@@ -51,11 +50,26 @@ export default function FaceRecognitionModal({
   const [error, setError] = useState("");
   const [faceDescriptorJson, setFaceDescriptorJson] = useState({});
   const [captured, setCaptured] = useState(false);
+  const [formState, formAction] = useFormState(
+    (prevState: any, formData: FormData) => createAccount(prevState, formData),
+    {
+      message: "",
+    },
+  );
   const router = useRouter();
   let isHappy = false;
   let isCapture = false;
 
   const { faceID } = userInfo ?? {};
+
+  useEffect(() => {
+    if (formState.message !== "") {
+      console.log("Form state:", formState);
+      setTimeout(() => {
+        onClose(); // Call onClose after a 3-second delay
+      }, 3000);
+    }
+  }, [formState]);
 
   useEffect(() => {
     loadModels();
@@ -230,9 +244,11 @@ export default function FaceRecognitionModal({
     }, 1000);
   };
 
-  const handleClose = (e: any) => {
+  const handleClose = async (e: any) => {
     e.preventDefault();
-    onClose();
+    // Wait until pending is false
+
+    onClose(); // Call onClose after pending is false
   };
 
   return (
@@ -279,7 +295,7 @@ export default function FaceRecognitionModal({
           </div>
           {error ? <p>{error}</p> : <Spinner />}
           {Object.keys(userInfo).length == 0 && (
-            <form action={createAccount} method="POST">
+            <form action={formAction} method="POST">
               <input name="username" type="hidden" value={username} />
               <input name="password" type="hidden" value={password} />
               <input
@@ -287,14 +303,7 @@ export default function FaceRecognitionModal({
                 type="hidden"
                 value={JSON.stringify(faceDescriptorJson)}
               />
-              <Button
-                color="primary"
-                disabled={!captured}
-                onClick={handleClose}
-                type="submit"
-              >
-                Submit
-              </Button>
+              <FormButton color="primary">Submit</FormButton>
             </form>
           )}
         </ModalBody>
